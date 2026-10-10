@@ -35,38 +35,27 @@
     </div>
 
     <script>
-        const repoOwner = window.location.hostname.split('.')[0];
-        const repoName = window.location.pathname.split('/')[1];
-        const apiUrl = https://api.github.com/repos/${repoOwner}/${repoName}/contents/;
+        // Danh sách các bài hát của bạn (hãy điền tên file mp3 vào đây)
+        const playlist = [
+            { name: "November Rain", url: "NovemberRain.mp3" },
+            // Nếu bạn muốn thêm bài khác, hãy copy dòng dưới dán tiếp vào:
+            // { name: "Tên Bài Hát", url: "TenFile.mp3" }
+        ];
 
         const audioPlayer = document.getElementById('audio-player');
         const trackTitle = document.getElementById('track-title');
         const playlistElement = document.getElementById('playlist');
         
-        let playlist = [];
         let currentIndex = 0;
 
-        async function fetchMusic() {
-            try {
-                const response = await fetch(apiUrl);
-                const files = await response.json();
-                
-                // Lọc các file có đuôi .mp3
-                playlist = files.filter(file => file.name.endsWith('.mp3')).map(file => ({
-                    name: decodeURIComponent(file.name.replace(/\.[^/.]+$/, "")),
-                    url: file.download_url
-                }));
-
-                if (playlist.length === 0) {
-                    playlistElement.innerHTML = '<div class="loading">Chưa có bài hát .mp3 nào trong kho! Hãy tải nhạc lên.</div>';
-                    return;
-                }
-
-                renderPlaylist();
-                loadTrack(0);
-            } catch (error) {
-                playlistElement.innerHTML = '<div class="loading">Không thể tải danh sách nhạc. Vui lòng kiểm tra lại.</div>';
+        function initPlayer() {
+            if (playlist.length === 0) {
+                playlistElement.innerHTML = '<div class="loading">Chưa có bài hát nào!</div>';
+                return;
             }
+
+            renderPlaylist();
+            loadTrack(0);
         }
 
         function renderPlaylist() {
@@ -88,7 +77,6 @@
             audioPlayer.src = track.url;
             trackTitle.textContent = Đang phát: ${track.name};
             
-            // Cập nhật trạng thái active trên danh sách
             document.querySelectorAll('.playlist li').forEach((li, i) => {
                 if (i === currentIndex) {
                     li.classList.add('active');
@@ -100,14 +88,13 @@
             });
         }
 
-        // Tự động chuyển bài khi phát xong bài hiện tại
         audioPlayer.onended = () => {
             currentIndex = (currentIndex + 1) % playlist.length;
             loadTrack(currentIndex);
             audioPlayer.play();
         };
 
-        fetchMusic();
+        initPlayer();
     </script>
 </body>
 </html>
