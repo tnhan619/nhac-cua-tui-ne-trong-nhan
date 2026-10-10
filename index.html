@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Nhạc Của Tôi</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 600px; background: #1e293b; padding: 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        h1 { font-size: 24px; margin-bottom: 8px; text-align: center; color: #38bdf8; }
+        .subtitle { text-align: center; color: #94a3b8; font-size: 14px; margin-bottom: 24px; }
+        .player-box { background: #0f172a; padding: 16px; border-radius: 12px; margin-bottom: 20px; text-align: center; border: 1px solid #334155; }
+        #track-title { font-weight: bold; font-size: 16px; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        audio { width: 100%; outline: none; filter: invert(100%) hue-rotate(180deg); }
+        .playlist { list-style: none; padding: 0; margin: 0; max-height: 350px; overflow-y: auto; }
+        .playlist li { padding: 12px 16px; margin-bottom: 8px; background: #334155; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+        .playlist li:hover { background: #475569; }
+        .playlist li.active { background: #0284c7; color: white; font-weight: bold; }
+        .loading { text-align: center; color: #94a3b8; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Trang Nhạc Của Tôi</h1>
+        <div class="subtitle">Không cần đăng nhập, nghe nhạc trực tuyến mượt mà</div>
+        
+        <div class="player-box">
+            <div id="track-title">Đang chọn bài hát...</div>
+            <audio id="audio-player" controls></audio>
+        </div>
+
+        <ul id="playlist" class="playlist">
+            <div class="loading">Đang tải danh sách nhạc...</div>
+        </ul>
+    </div>
+
+    <script>
+        const repoOwner = window.location.hostname.split('.')[0];
+        const repoName = window.location.pathname.split('/')[1];
+        const apiUrl = https://api.github.com/repos/${repoOwner}/${repoName}/contents/;
+
+        const audioPlayer = document.getElementById('audio-player');
+        const trackTitle = document.getElementById('track-title');
+        const playlistElement = document.getElementById('playlist');
+        
+        let playlist = [];
+        let currentIndex = 0;
+
+        async function fetchMusic() {
+            try {
+                const response = await fetch(apiUrl);
+                const files = await response.json();
+                
+                // Lọc các file có đuôi .mp3
+                playlist = files.filter(file => file.name.endsWith('.mp3')).map(file => ({
+                    name: decodeURIComponent(file.name.replace(/\.[^/.]+$/, "")),
+                    url: file.download_url
+                }));
+
+                if (playlist.length === 0) {
+                    playlistElement.innerHTML = '<div class="loading">Chưa có bài hát .mp3 nào trong kho! Hãy tải nhạc lên.</div>';
+                    return;
+                }
+
+                renderPlaylist();
+                loadTrack(0);
+            } catch (error) {
+                playlistElement.innerHTML = '<div class="loading">Không thể tải danh sách nhạc. Vui lòng kiểm tra lại.</div>';
+            }
+        }
+
+        function renderPlaylist() {
+            playlistElement.innerHTML = '';
+            playlist.forEach((track, index) => {
+                const li = document.createElement('li');
+                li.textContent = ▶ ${track.name};
+                li.onclick = () => {
+                    loadTrack(index);
+                    audioPlayer.play();
+                };
+                playlistElement.appendChild(li);
+            });
+        }
+
+        function loadTrack(index) {
+            currentIndex = index;
+            const track = playlist[currentIndex];
+            audioPlayer.src = track.url;
+            trackTitle.textContent = Đang phát: ${track.name};
+            
+            // Cập nhật trạng thái active trên danh sách
+            document.querySelectorAll('.playlist li').forEach((li, i) => {
+                if (i === currentIndex) {
+                    li.classList.add('active');
+                    li.textContent = ♫ ${playlist[i].name};
+                } else {
+                    li.classList.remove('active');
+                    li.textContent = ▶ ${playlist[i].name};
+                }
+            });
+        }
+
+        // Tự động chuyển bài khi phát xong bài hiện tại
+        audioPlayer.onended = () => {
+            currentIndex = (currentIndex + 1) % playlist.length;
+            loadTrack(currentIndex);
+            audioPlayer.play();
+        };
+
+        fetchMusic();
+    </script>
+</body>
+</html>
